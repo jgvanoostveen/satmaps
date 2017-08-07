@@ -25,10 +25,9 @@ class Request(dict):
                 raise TypeError('Key {} is not a valid parameter'.format(k))
 
 
-def get_db(hostname, db_name):
-    client = MongoClient('localhost', 27017)
-    db = client.local
-    return db
+def get_client(hostname, db_name):
+    client = MongoClient('localhost', 27017, serverSelectionTimeoutMS=1)
+    return client
 
 
 def get_latest_request(connection):
