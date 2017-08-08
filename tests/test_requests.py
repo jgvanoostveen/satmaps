@@ -1,5 +1,6 @@
 import unittest
 from satmaps import requests
+import pymongo
 from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError, ConnectionFailure
 import socket
@@ -35,12 +36,12 @@ class TestRequest(unittest.TestCase):
              client.server_info()
 
     def test_get_latest_request_from_collection(self):
-        test_request = {'sensor': ['S1'],
-                        'end_date': datetime.datetime.utcnow()}
+        test_request = {u'sensor': [u'S1'],
+                        u'end_date': u'2017-01-01'}
         collection = requests.get_local_collection()
         collection.insert(test_request)
-        latest_request = collection.get_latest_request()
-        self.assertEqual(test_request, latest_request)
+        latest_request = requests.get_latest_request(collection)
+        self.assertDictEqual(test_request, latest_request)
 
     def test_getcolleciton_returns_mongodb_collection(self):
         from pymongo.collection import Collection
@@ -54,6 +55,7 @@ def check_not_dev_host():
         return True
     else:
         return False
+
 
 if __name__ == '__main__':
     unittest.main()

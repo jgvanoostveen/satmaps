@@ -4,6 +4,7 @@
 # Return the request contents
 import warnings
 from pymongo import MongoClient
+import pymongo
 
 sane_dict = {
              "sensor": [],
@@ -34,6 +35,6 @@ def get_local_collection():
     return collection
 
 def get_latest_request(collection):
-    cursor = collection.find().sort([('_id', pymongo.ASCENDING)])
+    cursor = collection.find().sort([('_id', pymongo.DESCENDING)])
     request_dict = cursor.next()
-    return request_json
+    return request_dict
