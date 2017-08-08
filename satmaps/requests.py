@@ -31,7 +31,7 @@ def get_client(hostname, db_name):
 
 def get_local_collection():
     collection = get_client('localhost', 27017).local
-    return colleciton
+    return collection
 
 def get_latest_request(connection):
 
