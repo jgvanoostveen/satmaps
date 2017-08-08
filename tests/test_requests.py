@@ -19,7 +19,7 @@ class TestRequest(unittest.TestCase):
         with self.assertRaises(TypeError):
             requests.Request(insane_request)
 
-    def test_get_mongo_connection(self):
+    def test_get_mongo_connection_remote_only(self):
         dev_machine = check_not_dev_host()
         if dev_machine:
             self.skipTest('Skipping connection test on a dev machine')
@@ -34,12 +34,12 @@ class TestRequest(unittest.TestCase):
                              serverSelectionTimeoutMS=1)
              client.server_info()
 
-    def test_get_latest_request_from_db(self):
+    def test_get_latest_request_from_collection(self):
         test_request = {'sensor': ['S1'],
-                          'end_date': datetime.datetime.now()}
-        db = requests.get_db()
-        db.insert_request()
-        latest_request = db.get_last_request()
+                        'end_date': datetime.datetime.utcnow()}
+        collection = requests.get_local_collection()
+        collection.insert(test_request)
+        latest_request = collection.get_latest_request()
         self.assertEqual(test_request, latest_request)
 
     def test_getcolleciton_returns_mongodb_collection(self):

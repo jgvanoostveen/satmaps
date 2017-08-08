@@ -30,9 +30,10 @@ def get_client(hostname, db_name):
     return client
 
 def get_local_collection():
-    collection = get_client('localhost', 27017).local
+    collection = get_client('localhost', 27017).local.local
     return collection
 
-def get_latest_request(connection):
-
+def get_latest_request(collection):
+    cursor = collection.find().sort([('_id', pymongo.ASCENDING)])
+    request_dict = cursor.next()
     return request_json
