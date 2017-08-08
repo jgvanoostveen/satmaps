@@ -8,7 +8,10 @@ import pymongo
 
 sane_dict = {
              "sensor": [],
-             "end_date": []
+             "end_date": [],
+             "roi_box": [],
+             "send_to": None,
+             "history": [],
              }
 
 class Request(dict):
@@ -37,4 +40,5 @@ def get_local_collection():
 def get_latest_request(collection):
     cursor = collection.find().sort([('_id', pymongo.DESCENDING)])
     request_dict = cursor.next()
-    return request_dict
+    return request_dictmockdb
+
