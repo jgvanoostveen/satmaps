@@ -40,5 +40,4 @@ def get_local_collection():
 def get_latest_request(collection):
     cursor = collection.find().sort([('_id', pymongo.DESCENDING)])
     request_dict = cursor.next()
-    return request_dictmockdb
-
+    return request_dict
