@@ -7,6 +7,7 @@ from pymongo import MongoClient
 import pymongo
 
 sane_dict = {
+             "_id": None,
              "sensor": [],
              "end_date": [],
              "roi_box": [],
@@ -15,18 +16,18 @@ sane_dict = {
              }
 
 class Request(dict):
-    def __init__(self, request_dict):
-        self.keys = request_dict.keys
-        self.values = request_dict.values
-        self.check_sanity()
+    def __init__(self, request_dict, check_sanity=True):
+        self.keys = request_dict.keys()
+        self.values = request_dict.values()
+        if check_sanity:
+            self.check_sanity()
 
     def check_sanity(self):
-        keys = self.keys()
-        for k in keys:
-            try:
-                k in sane_dict.keys
-            except:
-                raise TypeError('Key {} is not a valid parameter'.format(k))
+        required_keys = sane_dict.keys()
+        if not all(k in self.keys for k in required_keys):
+            raise TypeError('Received an invalid set of parameters, exiting')
+        else:
+            pass
 
 
 def get_client(server_uri):
