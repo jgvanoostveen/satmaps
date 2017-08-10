@@ -39,5 +39,8 @@ def get_local_collection(client):
 
 def get_latest_request(collection):
     cursor = collection.find().sort([('_id', pymongo.DESCENDING)])
-    request_dict = cursor.next()
-    return request_dict
+    if cursor.count() < 1:
+        raise ValueError('No documents found')
+    else:
+        request_dict = cursor.next()
+        return request_dict

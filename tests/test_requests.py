@@ -50,6 +50,11 @@ class TestRequest(unittest.TestCase):
         latest_request = requests.get_latest_request(collection)
         self.assertDictEqual(test_request, latest_request)
 
+    def test_check_if_cursor_is_empty(self):
+        collection = requests.get_local_collection(self.db)
+        with self.assertRaises(ValueError):
+            latest_request = requests.get_latest_request(collection)
+
     @unittest.SkipTest
     def test_getcolleciton_returns_mongodb_collection(self):
         from pymongo.collection import Collection
