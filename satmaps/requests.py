@@ -29,16 +29,16 @@ class Request(dict):
                 raise TypeError('Key {} is not a valid parameter'.format(k))
 
 
-def get_client(hostname, db_name):
-    client = MongoClient('localhost', 27017, serverSelectionTimeoutMS=1)
+def get_client(server_uri):
+    client = MongoClient(server_uri)
     return client
 
-def get_local_collection():
-    collection = get_client('localhost', 27017).local.local
+def get_local_collection(client):
+    collection = client.local.local
     return collection
 
 def get_latest_request(collection):
     cursor = collection.find().sort([('_id', pymongo.DESCENDING)])
     request_dict = cursor.next()
-    return request_dictmockdb
+    return request_dict
 
