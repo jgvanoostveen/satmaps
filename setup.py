@@ -7,7 +7,10 @@ requirements = ['numpy',
                 'pyresample',
                 'pyyaml',
                 'pillow',
-                'rasterio']
+                'rasterio',
+                'mongomock',
+                'pymongo'
+                ]
 
 readme_contents = ""
 
@@ -28,4 +31,4 @@ setup(
       'Topic :: Scientific/Engineering'
       ],
       include_package_data = False,
-      )
+     )
