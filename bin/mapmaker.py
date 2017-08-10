@@ -13,3 +13,5 @@ sane_request['_id'] = datetime.datetime.utcnow()
 
 collection.insert_one(sane_request)
 request = requests.Request(requests.get_latest_request(collection))
+
+print request
