@@ -4,8 +4,7 @@ import pymongo
 from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError, ConnectionFailure
 import socket
-import datetime
-
+from mongomock import mongo_client
 
 class TestRequest(unittest.TestCase):
     """Test handling JSON requests"""
@@ -13,7 +12,13 @@ class TestRequest(unittest.TestCase):
     def setUp(self):
         self.sane_request = {
                 'sensor': ['S1'] }
-        self.db = None
+        self.client = mongo_client.MongoClient()
+        self.db = self.client.db
+        self.server_uri = self.client.address[0]
+        self.server_port = self.client.address[1]
+
+    def tearDown(self):
+        self.client.close()
 
     def test_fail_with_wrong_dict_keys(self):
         insane_request = {"sensors": []}
@@ -36,16 +41,19 @@ class TestRequest(unittest.TestCase):
              client.server_info()
 
     def test_get_latest_request_from_collection(self):
-        test_request = {u'sensor': [u'S1'],
-                        u'end_date': u'2017-01-01'}
-        collection = requests.get_local_collection()
+        import datetime
+        test_request = {u'sensor': ['S1'],
+                        u'end_date': u'2017-01-01',
+                        u'now': datetime.datetime.utcnow()}
+        collection = requests.get_local_collection(self.db)
         collection.insert(test_request)
         latest_request = requests.get_latest_request(collection)
         self.assertDictEqual(test_request, latest_request)
 
+    @unittest.SkipTest
     def test_getcolleciton_returns_mongodb_collection(self):
         from pymongo.collection import Collection
-        collection = requests.get_local_collection()
+        collection = requests.get_local_collection(self.db)
         self.assertIsInstance(collection, Collection)
 
 
