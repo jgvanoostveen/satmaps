@@ -10,7 +10,15 @@ sane_dict = {
              "_id": None,
              "sensor": [],
              "end_date": [],
-             "roi_box": [],
+             "roi": {
+                      'coordinates':
+                        [[[-2.21, 82.84],
+                          [14.14, 83.13],
+                          [13.26, 73.37],
+                          [-3.9, 74.25],
+                          [-2.21, 82.84]]],
+                       'type': 'Polygon'
+                       },
              "send_to": None,
              "history": [],
              }
