@@ -8,7 +8,7 @@ from copy import deepcopy
 client = MongoClient()
 collection = requests.get_local_collection(client)
 
-sane_request = deepcopy(requests.sane_dict)
+sane_request = deepcopy(requests.SANE_DICT)
 sane_request['_id'] = datetime.datetime.utcnow()
 
 collection.insert_one(sane_request)

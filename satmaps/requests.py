@@ -1,15 +1,12 @@
-# Obtain the request from json
-# Obtain the latest request from the database
-# Obtain the request from the email
-# Return the request contents
 import warnings
 from pymongo import MongoClient
 import pymongo
 
-sane_dict = {
+SANE_DICT = {
              "_id": None,
-             "sensor": [],
-             "end_date": [],
+             "sensor": None,
+             "start_date": None,
+             "end_date": None,
              "roi": {
                       'coordinates':
                         [[[-2.21, 82.84],
@@ -20,7 +17,9 @@ sane_dict = {
                        'type': 'Polygon'
                        },
              "send_to": None,
-             "history": [],
+             "history": None,
+             "spatial_scale": None,
+             "projection": None
              }
 
 class Request(dict):
@@ -31,7 +30,7 @@ class Request(dict):
             self.check_sanity()
 
     def check_sanity(self):
-        required_keys = sane_dict.keys()
+        required_keys = SANE_DICT.keys()
         if not all(k in self.keys() for k in required_keys):
             raise TypeError('Received an invalid set of parameters, exiting')
 
