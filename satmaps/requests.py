@@ -19,7 +19,9 @@ SANE_DICT = {
              "send_to": None,
              "history": None,
              "spatial_scale": None,
-             "projection": None
+             "projection": None,
+             "obtained": [],
+             "processed": []
              }
 
 class Request(dict):
