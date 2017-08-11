@@ -42,14 +42,18 @@ class TestRequest(unittest.TestCase):
 
     def test_get_latest_request_from_collection(self):
         import datetime
-        test_request = {u'sensor': ['S1'],
+        test_request_1 = {u'sensor': ['S1'],
+                        u'end_date': u'2017-01-01',
+                        u'_id': datetime.datetime.utcnow()}
+        test_request_2 = {u'sensor': ['S1'],
                         u'end_date': u'2017-01-01',
                         u'_id': datetime.datetime.utcnow()}
         collection = requests.get_local_collection(self.db)
-        collection.insert(test_request)
+        collection.insert(test_request_1)
+        collection.insert(test_request_2)
         latest_request = requests.get_latest_request(collection,
                                                      check_sanity=False)
-        self.assertDictEqual(test_request, latest_request)
+        self.assertDictEqual(test_request_2, latest_request)
 
     def test_check_if_cursor_is_empty(self):
         collection = requests.get_local_collection(self.db)

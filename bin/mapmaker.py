@@ -9,8 +9,8 @@ client = MongoClient()
 collection = requests.get_local_collection(client)
 
 sane_request = deepcopy(requests.SANE_DICT)
-sane_request['_id'] = datetime.datetime.utcnow()
-
+sane_request.pop('_id')
+print sane_request
 collection.insert_one(sane_request)
 request = requests.Request(requests.get_latest_request(collection))
 
