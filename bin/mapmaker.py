@@ -8,52 +8,35 @@ from sentinelsat import SentinelAPI
 from sentinelsat import geojson_to_wkt
 import argparse
 from zipfile import ZipFile
+import rasterio
+from rasterio import crs
 
-def distribute_via_gmail(email, filepath):
+def distribute_via_gmail(send_to=None,
+                         attachment_path=None,
+                         from_addr=None):
     import smtplib
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
     from email.mime.base import MIMEBase
     from email import encoders
 
-    omaddr = "EMAIL address of the sender"
-    toaddr = "EMAIL address of the receiver"
-
-    # instance of MIMEMultipart
     msg = MIMEMultipart()
-
-    # storing the senders email address
-    msg['From'] = "npi.cruise.data@gmail.com"
-    # storing the receivers email address
-    msg['To'] = email
-    # storing the subject
+    msg['From'] = from_addr
+    msg['To'] = send_to
     msg['Subject'] = "Maps from NPI"
-    # string to store the body of the mail
-    body = "Sample"
-    # attach the body with the msg instance
+    body = "Sample map"
     msg.attach(MIMEText(body, 'plain'))
-    # open the file to be sent
-    attachment = open(filepath, "rb")
-    # instance of MIMEBase and named as p
+    attachment = open(attachment_path, "rb")
     p = MIMEBase('application', 'octet-stream')
-    # To change the payload into encoded form
     p.set_payload((attachment).read())
-    # encode into base64
     encoders.encode_base64(p)
-    p.add_header('Content-Disposition', "attachment; filename= %s" % filepath)
-    # attach the instance 'p' to instance 'msg'
+    p.add_header('Content-Disposition', "attachment; filename= %s" % attachment_path)
     msg.attach(p)
-    # creates SMTP session
     s = smtplib.SMTP('smtp.gmail.com', 587)
-    # start TLS for security
     s.starttls()
-    # Authentication
-    s.login("npi.cruise.data@gmail.com", "Gunnar@2017")
-    # Converts the Multipart msg into a string
+    s.login("foo", "bar")
     text = msg.as_string()
-    # sending the mail
-    s.sendmail("npi.cruise.data@gmail.com", email, text)
-    # terminating the session
+    s.sendmail(from_addr, send_to, text)
     s.quit()
 
 
@@ -65,16 +48,39 @@ def process_sentinel_scene(product):
     with ZipFile(product['identifier'] + ".zip") as zf:
         zf.extractall(".")
 
+
+def create_output_dataset(request, output_path=None):
+    xres = request['resolution']
+    yres = request['resolution']
+    projection = request['projection']
+    roi = request['roi']
+    dataset = rasterio.open(output_path,
+                            'w',
+                            driver='GTiff',
+                            height=height,
+                            width=width,
+                            count=1,
+                            dtype=rasterio.uint8,
+                            crs=crs.CRS({'init': request['crs']}))
+
+
+def convert_roi_coordinates(roi):
+    coordinate_pairs = roi['coordinate']
+    x, y = Proj(lons)
+    y = Proj(lats)
+
 def update_document(request, collection):
     result = collection.find_one({"_id": request["_id"]})
     result["obtained"] = request["obtained"]
     collection.save(result)
+
 
 def read_credentials(filepath):
     with open(filepath, 'r') as credentials:
         user = credentials.readline().rstrip('\n')
         password = credentials.readline().rstrip('\n')
         return user, password
+
 
 def main():
 
@@ -114,22 +120,24 @@ def main():
     if request['end_date'] >= datetime.datetime.utcnow():
         start_time = datetime.datetime.utcnow() - datetime.timedelta(hours=20)
         end_time = datetime.datetime.utcnow()
-        products = api.query(footprint,
-                             date = (start_time, end_time),
-                             platformname=request['sensor'],
-                             producttype = 'GRD',
-                             sensoroperationalmode='EW')
+        # products = api.query(footprint,
+        #                      date = (start_time, end_time),
+        #                      platformname=request['sensor'],
+        #                      producttype = 'GRD',
+        #                      sensoroperationalmode='EW')
 
-        for item_id in products.keys():
-            if item_id not in request['obtained']:
-                if args.download:
-                    api.download(item_id)
-                    distribute_via_gmail('npi.cruise.data@gmail.com', 'o.jpeg')
-                    # process_sentinel_scene(products[item_id])
-                    # request['obtained'].append(item_id)
-                    # update_document(request, collection)
-            else:
-                print "{} has been obtained earlier".format(item_id)
+        # for item_id in products.keys():
+        #     if item_id not in request['obtained']:
+        #         if args.download:
+        #             # api.download(item_id)
+        #             # process_sentinel_scene(products[item_id])
+        #             # request['obtained'].append(item_id)
+        #             # update_document(request, collection)
+        #     else:
+        #         print "{} has been obtained earlier".format(item_id)
+        distribute_via_gmail(send_to = request['send_to'],
+                             from_addr='npi.cruise.data@gmail.com',
+                             attachment_path='../tmp/iskart_2017-05-15.jpg')
 
 
 if __name__ == "__main__":

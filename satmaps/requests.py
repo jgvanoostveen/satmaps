@@ -1,6 +1,9 @@
 import warnings
 from pymongo import MongoClient
 import pymongo
+import json
+import re
+import datetime
 
 SANE_DICT = {
              "_id": None,
@@ -19,7 +22,7 @@ SANE_DICT = {
              "send_to": None,
              "history": None,
              "spatial_scale": None,
-             "projection": None,
+             "crs": None,
              "obtained": [],
              "processed": []
              }
@@ -51,3 +54,20 @@ def get_latest_request(collection, check_sanity=True):
     else:
         request_dict = cursor.next()
         return Request(request_dict, check_sanity=check_sanity)
+
+def load_from_file(filepath):
+    with open(filepath, mode='r') as filehandle:
+        json_dict = json.load(filehandle, object_hook=parse_datetime)
+        request = Request(json_dict)
+    return request
+
+def parse_datetime(dct, date_format=None):
+    if date_format is None:
+        date_format = "%Y-%m-%dT%H:%M:%S UTC"
+    for k, v in dct.items():
+        if isinstance(v, basestring) and re.search("\ UTC", v):
+            try:
+                dct[k] = datetime.datetime.strptime(v, date_format)
+            except:
+                raise ValueError("Not sure if the date is UTC, exiting")
+    return dct
