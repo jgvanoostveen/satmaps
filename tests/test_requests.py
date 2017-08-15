@@ -10,8 +10,9 @@ class TestRequest(unittest.TestCase):
     """Test handling JSON requests"""
 
     def setUp(self):
-        self.sane_request = {
-                'sensor': ['S1'] }
+       # self.sane_request = {
+        #         'sensor': ['S1'] }
+        self.sane_request = requests.SANE_DICT
         self.client = mongo_client.MongoClient()
         self.db = self.client.db
         self.server_uri = self.client.address[0]
@@ -65,6 +66,12 @@ class TestRequest(unittest.TestCase):
         from pymongo.collection import Collection
         collection = requests.get_local_collection(self.db)
         self.assertIsInstance(collection, Collection)
+
+    def test_create_gtiff_output_from_roi(self):
+        roi = self.sane_request['roi']
+        crs = self.sane_request['crs']
+        coords = ['coordinates']
+        assert True
 
 
 def check_not_dev_host():
