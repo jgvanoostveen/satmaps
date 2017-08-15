@@ -21,7 +21,7 @@ SANE_DICT = {
                        },
              "send_to": None,
              "history": None,
-             "spatial_scale": None,
+             "spatial_resolution": None,
              "crs": None,
              "obtained": [],
              "processed": []
@@ -71,3 +71,18 @@ def parse_datetime(dct, date_format=None):
             except:
                 raise ValueError("Not sure if the date is UTC, exiting")
     return dct
+
+def find_ul_corner():
+    pass
+
+def create_empty_gtiff(*args):
+    a_pixel_width = 0
+    b_rotation = 0
+    c_x_ul = 0
+    d_column_rotation = 0
+    e_pixel_height = 0
+    f_y_ul = 0
+
+
+def find_ul_corner(coords_list)
+    pass
