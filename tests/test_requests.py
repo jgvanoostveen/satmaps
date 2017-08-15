@@ -1,3 +1,4 @@
+import rasterio
 import unittest
 from satmaps import requests as maprequests
 import pymongo
@@ -5,6 +6,7 @@ from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError, ConnectionFailure
 import socket
 from mongomock import mongo_client
+import rasterio
 
 class TestRequest(unittest.TestCase):
     """Test handling JSON maprequests"""
@@ -69,12 +71,20 @@ class TestRequest(unittest.TestCase):
 
     def test_create_gtiff_output_from_roi(self):
         roi = self.sane_request['roi']
+        roi['coordinates'] = [[[1.26743,80.42166],[8.70664,79.01680]]]
         crs = self.sane_request['crs']
-        coords = ['coordinates']
-        xres = self.sane_request['spatial_resolution']
-        yres = self.sane_request['spatial_resolution']
-        maprequests.create_empty_gtiff()
-        assert True
+        crs = 'EPSG:3035'
+        fpath = '/tmp/o.tif'
+        coords = roi['coordinates'][0]
+        xres = 1500
+        yres = 1500
+        dtype = rasterio.uint8
+        dst = maprequests.create_empty_dst(fpath,
+                                           coords,
+                                           xres,
+                                           crs,
+                                           dtype)
+        self.assertTrue(dst.crs == crs)
 
 
 def check_not_dev_host():
