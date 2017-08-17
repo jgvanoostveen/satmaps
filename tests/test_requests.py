@@ -71,14 +71,14 @@ class TestRequest(unittest.TestCase):
 
     def test_create_gtiff_output_from_roi(self):
         roi = self.sane_request['roi']
-        roi['coordinates'] = [[[1.26743,80.42166],[8.70664,79.01680]]]
+        roi['coordinates'] = [[[[-49.26743,80.42166],[26.70664,70.01680]]]]
         crs = self.sane_request['crs']
         crs = 'EPSG:3035'
         fpath = '/tmp/o.tif'
         coords = roi['coordinates'][0]
         xres = 1500
         yres = 1500
-        dtype = rasterio.uint8
+        dtype = rasterio.uint16
         dst = maprequests.create_empty_dst(fpath,
                                            coords,
                                            xres,
