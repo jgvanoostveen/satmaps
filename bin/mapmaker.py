@@ -55,7 +55,7 @@ def distribute_via_gmail(send_to=None,
     msg.attach(p)
     s = smtplib.SMTP('smtp.gmail.com', 587)
     s.starttls()
-    s.login("foo", "bar")
+    s.login("Foo", "Bar")
     text = msg.as_string()
     s.sendmail(from_addr, send_to, text)
     s.quit()
@@ -73,6 +73,10 @@ def process_sentinel_scene(product, output_filepath):
             "gdalwarp",
             "-t_srs",
             "EPSG:3035",
+            "-srcnodata",
+            "0",
+            "-dstnodata",
+            "0",
             "-r",
             "bilinear",
             input_filepath,
