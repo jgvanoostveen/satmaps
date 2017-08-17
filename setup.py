@@ -9,7 +9,8 @@ requirements = ['numpy',
                 'pillow',
                 'rasterio',
                 'mongomock',
-                'pymongo'
+                'pymongo',
+                'sentinelsat'
                 ]
 
 readme_contents = ""
