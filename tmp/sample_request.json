@@ -2,7 +2,7 @@
 	"sensor": "Sentinel-1",
 	"start_date": "None",
 	"end_date": "2017-10-10T00:00:01 UTC",
-	"time_window": 25,
+	"time_window": 15,
 	"roi": {
 		 "coordinates":
 		   [[[-37, 82],

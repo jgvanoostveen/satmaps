@@ -42,7 +42,7 @@ def distribute_via_gmail(send_to=None,
     msg = MIMEMultipart()
     msg['From'] = from_addr
     msg['To'] = ", ".join(send_to)
-    msg['Subject'] = "Satellite Map"
+    msg['Subject'] = "Automatic Fram Strait Satellite Observations"
 
     body = make_email_body(attachment_path=attachment_path)
 
@@ -174,7 +174,8 @@ def main():
     else:
         raise Exception("Request should come from either database or file, got None")
 
-    api = SentinelAPI(user, password)
+    api_url = 'https://colhub.met.no/'
+    api = SentinelAPI(user, password, api_url=api_url, show_progressbars=True)
     footprint = geojson_to_wkt(request['roi'])
 
     if request['end_date'] >= datetime.datetime.utcnow():
@@ -203,7 +204,7 @@ def main():
         if (len(products.keys()) < 1):
             raise ValueError('No scenes found, exiting.')
 
-        pool = multiprocessing.Pool(processes=2)
+        pool = multiprocessing.Pool(processes=1)
         output = pool.map(partial(process_sentinel_product,
                                   products=products,
                                   api=api,
