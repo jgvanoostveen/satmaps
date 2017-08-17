@@ -1,1 +1,9 @@
 *.pyc
+*.tif
+*.wld
+*.txt
+*.zip
+*.archive
+*.SAFE/
+*.xml
+*.jpeg
