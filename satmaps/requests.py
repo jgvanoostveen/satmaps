@@ -26,6 +26,7 @@ SANE_DICT = {
              "send_to": None,
              "history": None,
              "spatial_resolution": None,
+             "time_window": None,
              "crs": None,
              "obtained": [],
              "processed": []
@@ -81,22 +82,23 @@ def create_empty_dst(fpath, coords_list, res, crs, dtype):
     a_pixel_width = res
     b_rotation = 0
     d_column_rotation = 0
-    e_pixel_height = res 
-    
+    e_pixel_height = res
+
+    crs = str(crs).upper()
+
     (x_array, y_array) = convert_coords(coords_list, crs)
     c_x_ul = x_array.min()
     f_y_ul = y_array.max()
-
     height = (y_array.max() - y_array.min()) / res
     width = (x_array.max() - x_array.min()) / res
-    
+
     aff = Affine(a_pixel_width,
                  b_rotation,
                  c_x_ul,
                  d_column_rotation,
                  -1 * e_pixel_height,
                  f_y_ul)
-    
+
     dst = rasterio.open(fpath,
                         'w',
                         driver='GTiff',
@@ -105,15 +107,15 @@ def create_empty_dst(fpath, coords_list, res, crs, dtype):
                         count=1,
                         dtype=dtype,
                         crs=crs,
-                        transform=aff)
+                        transform=aff,
+                        nodata=0)
     return dst
 
 
 def convert_coords(coords_list, crs):
-    src_proj = Proj(init='EPSG:4326') 
+    src_proj = Proj(init='EPSG:4326')
     trg_proj = Proj(init=crs)
-
-    xy_list = [trg_proj(c[0], c[1]) for c in coords_list]
+    xy_list = [trg_proj(c[0], c[1]) for c in coords_list[0]]
     x_array = numpy.array([c[0] for c in xy_list])
     y_array = numpy.array([c[1] for c in xy_list])
 
