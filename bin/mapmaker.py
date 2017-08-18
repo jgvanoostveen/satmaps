@@ -8,6 +8,7 @@ import subprocess
 from zipfile import ZipFile
 import multiprocessing
 from functools import partial
+import yaml
 
 import rasterio
 from pymongo import MongoClient
@@ -55,7 +56,7 @@ def distribute_via_gmail(send_to=None,
     msg.attach(p)
     s = smtplib.SMTP('smtp.gmail.com', 587)
     s.starttls()
-    s.login("Foo", "Bar")
+    s.login(MAIL_USER, MAIL_PASS)
     text = msg.as_string()
     s.sendmail(from_addr, send_to, text)
     s.quit()
@@ -129,7 +130,7 @@ def make_output_filepath(dir_path):
     fpath = os.path.join(dir_path, fname)
     return fpath
 
-def process_sentinel_product(
+def download_sentinel_product(
                         product_key,
                         products,
                         api,
@@ -140,8 +141,6 @@ def process_sentinel_product(
     print("Obtaining item {}".format(product_key))
     if product_key not in request['obtained']:
         api.download(product_key)
-        process_sentinel_scene(products[product_key], output_path)
-        request['obtained'].append(product_key)
     else:
         print "{} has been obtained earlier".format(product_key)
 
@@ -160,14 +159,15 @@ def main():
     args = p.parse_args()
 
     if args.credentials is not None:
-        (user, password) = read_credentials(args.credentials)
-    else:
-        user = args.user
-        password = args.password
+        with open(args.credentials, 'r') as crd:
+            credentials_dict = yaml.load(crd)
+            MAIL_USER = credentials_dict['mail_user']
+            MAIL_PASS = credentials_dict['mail_password']
+            SHUB_USER = credentials_dict['shub_user']
+            SHUB_PASS = credentials_dict['shub_password']
 
     if all((args.input_json_file, args.from_database)):
         raise Exception("Request should come from either database or file, not both, quiting")
-        # TODO: print messages through logger
 
     elif args.input_json_file:
         request = maprequests.load_from_file(args.input_json_file)
@@ -179,7 +179,7 @@ def main():
         raise Exception("Request should come from either database or file, got None")
 
     api_url = 'https://colhub.met.no/'
-    api = SentinelAPI(user, password, api_url=api_url, show_progressbars=True)
+    api = SentinelAPI(SHUB_USER, SHUB_PASS, api_url=api_url, show_progressbars=True)
     footprint = geojson_to_wkt(request['roi'])
 
     if request['end_date'] >= datetime.datetime.utcnow():
@@ -205,15 +205,19 @@ def main():
         )
 
         print("Found {} scenes".format(len(products.keys())))
-        if (len(products.keys()) < 1):
-            raise ValueError('No scenes found, exiting.')
+        if (len(products.keys()) < 4):
+            raise ValueError('Not enough scenes found, exiting.')
 
-        pool = multiprocessing.Pool(processes=1)
-        output = pool.map(partial(process_sentinel_product,
+        pool = multiprocessing.Pool(processes=6)
+        output = pool.map(partial(download_sentinel_product,
                                   products=products,
                                   api=api,
                                   output_path=output_path,
                                   request=request), products.keys())
+
+        for product_key in products.keys():
+            process_sentinel_scene(products[product_key], output_path)
+
 
         zip_filepath = zip_tif_to_jpeg(output_path)
 
