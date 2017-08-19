@@ -29,7 +29,9 @@ def make_email_body(attachment_path=None):
     return body
 
 
-def distribute_via_gmail(send_to=None,
+def distribute_via_gmail(mail_user=None,
+                         mail_pass=None,
+                         send_to=None,
                          attachment_path=None,
                          from_addr=None,
                          subject=""
@@ -208,7 +210,7 @@ def main():
         if (len(products.keys()) < 4):
             raise ValueError('Not enough scenes found, exiting.')
 
-        pool = multiprocessing.Pool(processes=6)
+        pool = multiprocessing.Pool(processes=1)
         output = pool.map(partial(download_sentinel_product,
                                   products=products,
                                   api=api,
@@ -221,8 +223,10 @@ def main():
 
         zip_filepath = zip_tif_to_jpeg(output_path)
 
-        distribute_via_gmail(send_to = request['send_to'],
-                                 attachment_path=zip_filepath)
+        distribute_via_gmail(mail_user=MAIL_USER,
+                             mail_pass=MAIL_PASS,
+                             send_to = request['send_to'],
+                             attachment_path=zip_filepath)
 
 
 if __name__ == "__main__":
