@@ -58,7 +58,7 @@ def distribute_via_gmail(mail_user=None,
     msg.attach(p)
     s = smtplib.SMTP('smtp.gmail.com', 587)
     s.starttls()
-    s.login(MAIL_USER, MAIL_PASS)
+    s.login(mail_user, mail_pass)
     text = msg.as_string()
     s.sendmail(from_addr, send_to, text)
     s.quit()
