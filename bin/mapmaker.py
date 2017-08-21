@@ -12,6 +12,7 @@ import yaml
 import logging
 import io
 import time
+import shutil
 
 
 import rasterio
@@ -59,14 +60,14 @@ def distribute_via_gmail(mail_user=None,
     s.quit()
 
 
-def process_sentinel_scene(product, output_filepath):
+def process_sentinel_scene(product, data_dir, output_filepath):
     """
     Extract the contents of the obtained file
     and put it in the right place
     """
-    with ZipFile(".".join([product['identifier'], "zip"])) as zf:
-        zf.extractall(".")
-        input_filepath = glob.glob(".".join([product['identifier'], "SAFE/measurement/*hh*.tiff"]))[0]
+    with ZipFile(os.path.join(data_dir, ".".join([product['identifier'], "zip"]))) as zf:
+        zf.extractall(data_dir)
+        input_filepath = glob.glob(os.path.join(data_dir, ".".join([product['identifier'],"SAFE/measurement/*hh*.tiff"])))[0]
         subprocess.call([
             "gdalwarp",
             "-t_srs",
@@ -123,8 +124,14 @@ def read_credentials(filepath):
 
 def make_output_filepath(dir_path):
     timestamp = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
-    fname = 'S1_{}.tif'.format(timestamp)
-    fpath = os.path.join(dir_path, fname)
+    name = 'S1_{}'.format(timestamp)
+    fname = '.'.join((name, 'tif'))
+    odirpath = os.path.join(dir_path, name)
+    fpath = os.path.join(odirpath, fname)
+    try:
+        os.mkdir(odirpath)
+    except:
+        raise
     return fpath
 
 def download_sentinel_product(
@@ -137,17 +144,16 @@ def download_sentinel_product(
 
     print("Obtaining item {}".format(product_key))
     if product_key not in request['obtained']:
-        api.download(product_key)
+        api.download(product_key, directory_path=output_path)
     else:
         print "{} has been obtained earlier".format(product_key)
 
 def main():
 
     p = argparse.ArgumentParser()
-    p.add_argument("-u", "--user")
-    p.add_argument("-p", "--password")
     p.add_argument("-c", "--credentials", default=None)
-    p.add_argument("-s", "--send", default=None)
+    p.add_argument("-s", "--send", action="store_true")
+    p.add_argument("-u", "--cleanup", action="store_true")
     p.add_argument("-d", "--download", default=None)
     p.add_argument("-e", "--end-date", default=datetime.datetime(2018,1,1))
     p.add_argument("-i", "--input-json-file", default=None)
@@ -195,15 +201,6 @@ def main():
 
     if request['end_date'] >= datetime.datetime.utcnow():
 
-        output_path = make_output_filepath(args.download)
-        maprequests.create_empty_dst(
-            output_path,
-            request['roi']['coordinates'],
-            request['spatial_resolution'],
-            request['crs'],
-            rasterio.uint16
-        )
-
         start_time = datetime.datetime.utcnow() - datetime.timedelta(hours=request['time_window'])
         end_time = datetime.datetime.utcnow()
 
@@ -220,15 +217,26 @@ def main():
 
         if len(products.keys()) >= 1:
 
+            output_path = make_output_filepath(args.download)
+            maprequests.create_empty_dst(
+                output_path,
+                request['roi']['coordinates'],
+                request['spatial_resolution'],
+                request['crs'],
+                rasterio.uint16
+            )
+
+            data_dir = os.path.dirname(output_path)
+
             pool = multiprocessing.Pool(processes=1)
             output = pool.map(partial(download_sentinel_product,
                                       products=products,
                                       api=api,
-                                      output_path=output_path,
+                                      output_path=data_dir,
                                       request=request), products.keys())
 
             for product_key in products.keys():
-                process_sentinel_scene(products[product_key], output_path)
+                process_sentinel_scene(products[product_key], data_dir, output_path)
 
 
             zip_filepath = zip_tif_to_jpeg(output_path)
@@ -236,18 +244,27 @@ def main():
             attachment_size_mb = "{} MB".format(attachment_size / 1000000.)
             logger.info('Attachment size is {}'.format(attachment_size_mb))
 
+
         else:
             logger.warn('Not enough scenes found, aborting')
 
         log_contents = log_capture_string.getvalue()
         log_capture_string.close()
-        print log_contents
 
-        distribute_via_gmail(mail_user=MAIL_USER,
+        if args.send:
+            distribute_via_gmail(mail_user=MAIL_USER,
                      mail_pass=MAIL_PASS,
                      send_to = request['send_to'],
                      attachment_path=zip_filepath,
                      message_text=log_contents)
+
+        if args.cleanup:
+            try:
+                shutil.rmtree(data_dir, ignore_errors=True)
+            except:
+                raise
+
+
 
 
 if __name__ == "__main__":
