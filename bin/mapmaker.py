@@ -9,6 +9,10 @@ from zipfile import ZipFile
 import multiprocessing
 from functools import partial
 import yaml
+import logging
+import io
+import time
+
 
 import rasterio
 from pymongo import MongoClient
@@ -17,22 +21,11 @@ from sentinelsat import SentinelAPI, geojson_to_wkt
 from satmaps import requests as maprequests
 
 
-def make_email_body(attachment_path=None):
-    body = ""
-    body.join("Satellite imagery from: {}.\n")
-    if attachment_path:
-        attachment_size = os.path.getsize(attachment_path)
-        attachment_size_mb = "{} MB".format(attachment_size / 1000000.)
-        body = body.join("Attachment size {}\n".format(attachment_size_mb))
-    else:
-        body.join("This message has no attachment.\n")
-    return body
-
-
 def distribute_via_gmail(mail_user=None,
                          mail_pass=None,
                          send_to=None,
                          attachment_path=None,
+                         message_text=None,
                          from_addr=None,
                          subject=""
                         ):
@@ -47,15 +40,17 @@ def distribute_via_gmail(mail_user=None,
     msg['To'] = ", ".join(send_to)
     msg['Subject'] = "Automatic Fram Strait Satellite Observations"
 
-    body = make_email_body(attachment_path=attachment_path)
-
+    body = message_text
     msg.attach(MIMEText(body, 'plain'))
-    attachment = open(attachment_path, "rb")
-    p = MIMEBase('application', 'octet-stream')
-    p.set_payload((attachment).read())
-    encoders.encode_base64(p)
-    p.add_header('Content-Disposition', "attachment; filename= %s" % attachment_path)
-    msg.attach(p)
+
+    if attachment_path:
+        attachment = open(attachment_path, "rb")
+        p = MIMEBase('application', 'octet-stream')
+        p.set_payload((attachment).read())
+        encoders.encode_base64(p)
+        p.add_header('Content-Disposition', "attachment; filename= %s" % attachment_path)
+        msg.attach(p)
+
     s = smtplib.SMTP('smtp.gmail.com', 587)
     s.starttls()
     s.login(mail_user, mail_pass)
@@ -168,6 +163,20 @@ def main():
             SHUB_USER = credentials_dict['shub_user']
             SHUB_PASS = credentials_dict['shub_password']
 
+
+    zip_filepath = None
+
+    logger = logging.getLogger('mapmaker')
+    logger.setLevel(logging.DEBUG)
+    log_capture_string = io.BytesIO()
+    ch = logging.StreamHandler(log_capture_string)
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s  %(name)s  %(levelname)s: %(message)s')
+    logging.Formatter.converter = time.gmtime
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+
     if all((args.input_json_file, args.from_database)):
         raise Exception("Request should come from either database or file, not both, quiting")
 
@@ -206,27 +215,39 @@ def main():
             sensoroperationalmode='EW'
         )
 
-        print("Found {} scenes".format(len(products.keys())))
-        if (len(products.keys()) < 4):
-            raise ValueError('Not enough scenes found, exiting.')
+        logger.info("Found {} scenes".format(len(products.keys())))
+        logger.info("Scenes list:\n{}".format("\n".join(['\t'+products[key]['identifier'] for key in products.keys()])))
 
-        pool = multiprocessing.Pool(processes=1)
-        output = pool.map(partial(download_sentinel_product,
-                                  products=products,
-                                  api=api,
-                                  output_path=output_path,
-                                  request=request), products.keys())
+        if len(products.keys()) >= 3:
 
-        for product_key in products.keys():
-            process_sentinel_scene(products[product_key], output_path)
+            pool = multiprocessing.Pool(processes=1)
+            output = pool.map(partial(download_sentinel_product,
+                                      products=products,
+                                      api=api,
+                                      output_path=output_path,
+                                      request=request), products.keys())
+
+            for product_key in products.keys():
+                process_sentinel_scene(products[product_key], output_path)
 
 
-        zip_filepath = zip_tif_to_jpeg(output_path)
+            zip_filepath = zip_tif_to_jpeg(output_path)
+            attachment_size = os.path.getsize(zip_filepath)
+            attachment_size_mb = "{} MB".format(attachment_size / 1000000.)
+            logger.info('Attachment size is {}'.format(attachment_size_mb))
+
+        else:
+            logger.warn('Not enough scenes found (<4), aborting')
+
+        log_contents = log_capture_string.getvalue()
+        log_capture_string.close()
+        print log_contents
 
         distribute_via_gmail(mail_user=MAIL_USER,
-                             mail_pass=MAIL_PASS,
-                             send_to = request['send_to'],
-                             attachment_path=zip_filepath)
+                     mail_pass=MAIL_PASS,
+                     send_to = request['send_to'],
+                     attachment_path=zip_filepath,
+                     message_text=log_contents)
 
 
 if __name__ == "__main__":
