@@ -218,7 +218,7 @@ def main():
         logger.info("Found {} scenes".format(len(products.keys())))
         logger.info("Scenes list:\n{}".format("\n".join(['\t'+products[key]['identifier'] for key in products.keys()])))
 
-        if len(products.keys()) >= 3:
+        if len(products.keys()) >= 1:
 
             pool = multiprocessing.Pool(processes=1)
             output = pool.map(partial(download_sentinel_product,
@@ -237,7 +237,7 @@ def main():
             logger.info('Attachment size is {}'.format(attachment_size_mb))
 
         else:
-            logger.warn('Not enough scenes found (<4), aborting')
+            logger.warn('Not enough scenes found, aborting')
 
         log_contents = log_capture_string.getvalue()
         log_capture_string.close()
