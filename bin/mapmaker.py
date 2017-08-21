@@ -182,6 +182,13 @@ def main():
     ch.setFormatter(formatter)
     logger.addHandler(ch)
 
+    if args.download and not os.path.exists(args.download):
+        try:
+            os.mkdir(args.download)
+        except:
+            error_msg = 'Could not make a directory for downloads.'
+            logger.error(error_msg)
+            raise
 
     if all((args.input_json_file, args.from_database)):
         raise Exception("Request should come from either database or file, not both, quiting")
