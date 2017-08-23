@@ -193,7 +193,10 @@ def main():
 
     if os.path.exists(args.download):
         logger.debug('Emptying directory {}'.format(args.download))
-        empty_dir(args.download)
+        try:
+            empty_dir(args.download)
+        except:
+            raise
 
     if args.download and not os.path.exists(args.download):
         try:
