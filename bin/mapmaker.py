@@ -104,7 +104,7 @@ def zip_tif_to_jpeg(input_filepath):
     ])
     with ZipFile(zip_filepath, 'w') as zipball:
         for f in [jpeg_filepath, world_filepath]:
-            zipball.write(f)
+            zipball.write(f, os.path.basename(f))
 
     return zip_filepath
 
@@ -134,6 +134,7 @@ def make_output_filepath(dir_path):
         raise
     return fpath
 
+
 def download_sentinel_product(
                         product_key,
                         products,
@@ -147,6 +148,15 @@ def download_sentinel_product(
         api.download(product_key, directory_path=output_path)
     else:
         print "{} has been obtained earlier".format(product_key)
+
+
+def empty_dir(path):
+    for root, dirs, files in os.walk(path):
+        for f in files:
+            os.unlink(os.path.join(root, f))
+        for d in dirs:
+            shutil.rmtree(os.path.join(root, d))
+
 
 def main():
 
@@ -169,7 +179,6 @@ def main():
             SHUB_USER = credentials_dict['shub_user']
             SHUB_PASS = credentials_dict['shub_password']
 
-
     zip_filepath = None
 
     logger = logging.getLogger('mapmaker')
@@ -181,6 +190,10 @@ def main():
     logging.Formatter.converter = time.gmtime
     ch.setFormatter(formatter)
     logger.addHandler(ch)
+
+    if os.path.exists(args.download):
+        logger.debug('Emptying directory {}'.format(args.download))
+        empty_dir(args.download)
 
     if args.download and not os.path.exists(args.download):
         try:
@@ -245,12 +258,10 @@ def main():
             for product_key in products.keys():
                 process_sentinel_scene(products[product_key], data_dir, output_path)
 
-
             zip_filepath = zip_tif_to_jpeg(output_path)
             attachment_size = os.path.getsize(zip_filepath)
             attachment_size_mb = "{} MB".format(attachment_size / 1000000.)
             logger.info('Attachment size is {}'.format(attachment_size_mb))
-
 
         else:
             logger.warn('Not enough scenes found, aborting')
@@ -264,14 +275,6 @@ def main():
                      send_to = request['send_to'],
                      attachment_path=zip_filepath,
                      message_text=log_contents)
-
-        if args.cleanup:
-            try:
-                shutil.rmtree(data_dir, ignore_errors=True)
-            except:
-                raise
-
-
 
 
 if __name__ == "__main__":
